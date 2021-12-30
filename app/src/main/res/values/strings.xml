@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Voting Pro</string>
+    <string name="welcome">Welcome To Voting</string>
+    <string name="status">Status</string>
+    <string name="today_subject">Today Subject</string>
+    <string name="voting_ballot">Voting Ballot</string>
+</resources>
