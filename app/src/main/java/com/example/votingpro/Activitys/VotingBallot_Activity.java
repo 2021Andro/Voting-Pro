@@ -1,9 +1,11 @@
 package com.example.votingpro.Activitys;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +27,9 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class VotingBallot_Activity extends AppCompatActivity {
 
     private LinearLayout votingButtonLayout;
@@ -38,10 +43,11 @@ public class VotingBallot_Activity extends AppCompatActivity {
     private Main_Category category;
     private int rvp;
     private OnSuccessListener<? super Void> votingSuccessListener;
-    private OnCompleteListener<Void> addVoteInfoListener;
+    private OnCompleteListener<Void> addVoteInfoListener, addBackupVoteInfoListener;
     private OnFailureListener votingFailureListener;
     private Vote vote;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,7 +70,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
         tvSubject.setText(category.getSubject());
         tvStatus.setText(category.getStatus());
 
-        Log.d(MyApp.TAG, "Category Name --> " + category.getLocal_Id());
+        Log.d(MyApp.TAG, "Current Date --> " + getCurrentDate());
 
 
         // select category to voting
@@ -97,6 +103,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onResume() {
         super.onResume();
@@ -140,6 +147,28 @@ public class VotingBallot_Activity extends AppCompatActivity {
             }
         };
 
+        // the vote information backup submit
+        addBackupVoteInfoListener = new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+
+                if (task.isSuccessful()) {
+
+                    progressBar.setVisibility(View.GONE);
+                    votingButtonLayout.setVisibility(View.VISIBLE);
+
+                    Log.d(MyApp.TAG, "Add Vote Information Backup");
+
+
+                } else {
+
+                    Log.d(MyApp.TAG, "Add Vote Information Backup || Exception --> " + task.getException());
+
+                }
+
+            }
+        };
+
 
         // the vote information submit
         votingFailureListener = new OnFailureListener() {
@@ -156,11 +185,11 @@ public class VotingBallot_Activity extends AppCompatActivity {
 
 
     }
+
     // checking the category is already vote or not
     // checking category details the vote is submitted or not
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void validateForVote() {
-
-
 
         MyApp.myFireStore.collection("Voting_Container")
                 .document("Uid")
@@ -168,6 +197,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
                 .whereEqualTo("name", category.getName())
                 .whereEqualTo("status", category.getStatus())
                 .whereEqualTo("subject", category.getSubject())
+                .whereEqualTo("votingDay", getCurrentDate())
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
@@ -199,10 +229,11 @@ public class VotingBallot_Activity extends AppCompatActivity {
     }
 
     // this function store vote information on DB
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void submitVoteInfo() {
 
 
-        vote = new Vote(rvp, category.getName(), category.getStatus(), category.getSubject(), "Voting_Day", votingEmotions, true);
+        vote = new Vote(rvp, category.getName(), category.getStatus(), category.getSubject(), getCurrentDate(), votingEmotions, true);
 
         Log.d(MyApp.TAG, "Emotions --> "+votingEmotions);
 
@@ -213,6 +244,26 @@ public class VotingBallot_Activity extends AppCompatActivity {
                 .set(vote)
                 .addOnCompleteListener(addVoteInfoListener);
 
+
+        MyApp.myFireStore.collection("Voting_Container_Backup")
+                .document("Uid")
+                .collection(categoryName)
+                .document()
+                .set(vote)
+                .addOnCompleteListener(addBackupVoteInfoListener);
+
+
+    }
+
+    // getting current date
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private String getCurrentDate() {
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        LocalDateTime now = LocalDateTime.now();
+        String currentDate = dtf.format(now);
+
+        return currentDate;
 
     }
 
@@ -253,6 +304,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
     }
 
     // when the user clicks like button
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void onLikeButtonClick(View view) {
 
         if (isViewsEmpty()) {
@@ -270,6 +322,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
     }
 
     // when the user clicks neutral button
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void onNeutralButtonClick(View view) {
 
         if (isViewsEmpty()) {
@@ -286,6 +339,7 @@ public class VotingBallot_Activity extends AppCompatActivity {
     }
 
     // when the user clicks dislike button
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void onDislikeButtonClick(View view) {
 
         if (isViewsEmpty()) {
@@ -297,8 +351,6 @@ public class VotingBallot_Activity extends AppCompatActivity {
                     .update("dislike_Voting", FieldValue.increment(1))
                     .addOnSuccessListener(votingSuccessListener)
                     .addOnFailureListener(votingFailureListener);
-
-
 
 
         }
